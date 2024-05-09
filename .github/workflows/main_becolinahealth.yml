@@ -1,3 +1,6 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
 name: Build and deploy Node.js app to Azure Web App - becolinahealth
 
 on:
@@ -16,26 +19,13 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-
-      - name: Create .env file
-        run: |
-          touch .env
-          echo FE_URL="https://colinahealth.azurewebsites.net" >> .env
-          echo JWT_SECRET="pogiko123" >> .env
-          echo DB_TYPE=postgres >> .env
-          echo PGHOST=colinadb.postgres.database.azure.com >> .env
-          echo PGUSER=colina >> .env
-          echo PGPORT=5432 >> .env
-          echo PGDATABASE=colina >> .env
-          echo PGPASSWORD="jajnav5@" >> .env
-          echo DB_SYNCHRONIZE=true >> .env
-          echo DB_LOGGING=true >> .env
+          node-version: '20.x'
 
       - name: npm install, build, and test
         run: |
           npm install
-          npm install nest
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -67,9 +57,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_074D51ACCB094971B0E30623AB62BC0C }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_28FEBCE34A2E40E79CAB16D2E0BA5714 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B3240F895105470FB0011B8B219A4CC3 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_04B2C4125ED146D78637D32EC96B2055 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0A73FC8C5D984616BFF5150A07C3C1F5 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3498E99279DE492B9A2160E91E3A1310 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -78,3 +68,4 @@ jobs:
           app-name: 'becolinahealth'
           slot-name: 'Production'
           package: .
+          
