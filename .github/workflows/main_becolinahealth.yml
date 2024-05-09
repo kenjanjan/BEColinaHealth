@@ -1,3 +1,6 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
 name: Build and deploy Node.js app to Azure Web App - becolinahealth
 
 on:
@@ -18,25 +21,11 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: Create .env file
-        run: |
-          touch .env
-          echo FE_URL="https://colinahealth.azurewebsites.net" >> .env
-          echo JWT_SECRET="pogiko123" >> .env
-          echo DB_TYPE=postgres >> .env
-          echo PGHOST=colinadb.postgres.database.azure.com >> .env
-          echo PGUSER=colina >> .env
-          echo PGPORT=5432 >> .env
-          echo PGDATABASE=colina >> .env
-          echo PGPASSWORD="jajnav5@" >> .env
-          echo DB_SYNCHRONIZE=true >> .env
-          echo DB_LOGGING=true >> .env
-
       - name: npm install, build, and test
         run: |
           npm install
           npm run build --if-present
-
+          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -68,9 +57,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CB4BFE644C8044389A3898DF9F3D18BE }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BAF9A28421904568900F4B57C69DCD32 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_36011251FA494E44939731906C07C695 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E3236B998BC643288755688E794E19A9 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_39FF067EE3D344F9A95CA12D4AC318FE }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4CFAF21CE3EB4C22A7726EAD9B7FD302 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -79,3 +68,4 @@ jobs:
           app-name: 'becolinahealth'
           slot-name: 'Production'
           package: .
+          
