@@ -1,8 +1,11 @@
+name: Build and deploy Node.js app to Azure Web App - becolinahealth
+
+on:
   push:
     branches:
       - main
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -52,3 +55,27 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: node-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+      
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CB4BFE644C8044389A3898DF9F3D18BE }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BAF9A28421904568900F4B57C69DCD32 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_36011251FA494E44939731906C07C695 }}
+
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'becolinahealth'
+          slot-name: 'Production'
+          package: .
