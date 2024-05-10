@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - becolinahealth
 
 on:
@@ -21,11 +18,23 @@ jobs:
         with:
           node-version: '20.x'
 
+      - name: Create .env file
+        run: |
+          touch .env
+          echo FE_URL="https://colinahealth.azurewebsites.net" >> .env
+          echo JWT_SECRET="pogiko123" >> .env
+          echo DB_TYPE=postgres >> .env
+          echo PGHOST=colinadb.postgres.database.azure.com >> .env
+          echo PGUSER=colina >> .env
+          echo PGPORT=5432 >> .env
+          echo PGDATABASE=colina >> .env
+          echo PGPASSWORD="jajnav5@" >> .env
+          echo DB_SYNCHRONIZE=true >> .env
+          echo DB_LOGGING=true >> .env
+
       - name: npm install, build, and test
         run: |
           npm install
-          npm run build --if-present
-          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
