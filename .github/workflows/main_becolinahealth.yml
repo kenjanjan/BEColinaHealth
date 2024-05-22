@@ -31,6 +31,8 @@ jobs:
           echo PGPASSWORD="jajnav5@" >> .env
           echo DB_SYNCHRONIZE=true >> .env
           echo DB_LOGGING=true >> .env
+          echo NEXT_USER ="destrada@jairosolutions.com" >> .env
+          echo NEXT_PASS="sadk vadn orma vyyl" >> .env
 
       - name: npm install, build, and test
         run: |
