@@ -397,7 +397,7 @@ export class PatientsService {
     const recentMedicationQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.medicationlogs', 'medicationlogs')
-      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate','medicationlogs.medicationType'])
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationType'])
       .where('patient.uuid = :uuid', { uuid: id })
       .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
       .orderBy('medicationlogs.createdAt', 'DESC')
@@ -420,6 +420,83 @@ export class PatientsService {
       patientAllergies: patientAllergies,
       totalMedicationDue: totalMedicationCount,
       totalMedicationDone: totalMedicationDoneCount,
+    };
+  }
+  async getPatientLatestReport(id: string): Promise<{
+    data: Patients[];
+    recentMedication: any;
+    recentPRN: any;
+    latestVitalSign: any;
+    latestLabResult: any;
+  }> {
+    const patientExists = await this.patientsRepository.findOne({
+      where: { uuid: id },
+      select: ['id'],
+    });
+    if (!patientExists) {
+      throw new NotFoundException('Patient not found');
+    }
+    // const today = new Date();
+    // const formattedToday = today.toISOString().split('T')[0]; // Format date as YYYY-MM-DD
+
+    const patientSummary = this.patientsRepository
+      .createQueryBuilder('patient')
+      .leftJoin('patient.vitalsign', 'vitalsign')
+      .leftJoin('patient.allergies', 'allergies')
+      .select([
+        'patient.firstName',
+        'patient.lastName',
+      ])
+      .where('patient.uuid = :uuid', { uuid: id });
+
+    const recentASCHMedicationsQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
+      .andWhere('medicationlogs.medicationType == :medicationLogStatus', { medicationLogStatus: 'ASCH' })
+      .orderBy('medicationlogs.createdAt', 'DESC')
+      .limit(1)
+
+    const recentPRNMedicationsQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
+      .andWhere('medicationlogs.medicationType == :medicationLogStatus', { medicationLogStatus: 'PRN' })
+      .orderBy('medicationlogs.createdAt', 'DESC')
+      .limit(1)
+
+    const latestVitalSignQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.vitalsign', 'vitalsign')
+      .select(['vitalsign.bloodPressure', 'vitalsign.heartRate', 'vitalsign.respiratoryRate'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .orderBy('vitalsign.createdAt', 'DESC')
+      .limit(1)
+
+    const latestLabResultQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationType'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
+      .orderBy('medicationlogs.createdAt', 'DESC')
+      .limit(1)
+
+    const patientRecentInfoList = await patientSummary.getRawMany();
+    const recentASCHMedication = await recentASCHMedicationsQuery.getRawOne();// last medication taken 
+    const recentPRNMedication = await recentPRNMedicationsQuery.getMany();// prn taken within the day
+    const latestLabResult = await latestLabResultQuery.getRawOne();// latestLabResult
+    const latestVitalSign = await latestVitalSignQuery.getRawOne();// latest VitalSign
+    return {
+      data: patientRecentInfoList,
+      recentMedication: recentASCHMedication ? recentASCHMedication : { medicationLogsName: null, medicationLogsTime: null, medicationLogsDate: null },
+      recentPRN: recentPRNMedication,
+      latestLabResult: latestLabResult,
+      latestVitalSign: latestVitalSign
     };
   }
 
