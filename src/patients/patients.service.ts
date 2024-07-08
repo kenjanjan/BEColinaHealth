@@ -464,9 +464,9 @@ export class PatientsService {
     const recentPRNMedicationsQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.medicationlogs', 'medicationlogs')
-      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate'])
-      .where('patient.uuid = :uuid', { uuid: id })
-      .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus'])
+      .where('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
+      .andWhere('patient.uuid = :uuid', { uuid: id })
       .andWhere('medicationlogs.medicationType = :medicationLogStatus', { medicationLogStatus: 'PRN' })
       .orderBy('medicationlogs.createdAt', 'DESC')
       .limit(1)
