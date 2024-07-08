@@ -55,9 +55,10 @@ export class AppointmentsController {
       sortOrder: 'ASC' | 'DESC';
       startDate: string;
       endDate: string;
+      perPage: number;
     },
   ) {
-    const { term = '', page, sortBy, sortOrder,startDate,endDate } = body;
+    const { term = '', page, sortBy, sortOrder,startDate,endDate, perPage } = body;
     return this.appointmentService.getAllAppointments(
       term,
       page,
@@ -65,6 +66,7 @@ export class AppointmentsController {
       sortOrder,
       startDate,
       endDate,
+      perPage,
     );
   }
   
