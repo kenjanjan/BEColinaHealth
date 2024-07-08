@@ -447,6 +447,7 @@ export class PatientsService {
         'patient.firstName',
         'patient.lastName',
         'patient.uuid',
+        'patient.admissionDate'
       ])
       .where('patient.uuid = :uuid', { uuid: id });
 
