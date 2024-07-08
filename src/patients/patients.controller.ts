@@ -53,9 +53,9 @@ export class PatientsController {
   getPatientRecentInfo(@Param('id') id: string) {
     return this.patientsService.getPatientRecentInfo(id);
   }
-  @Post('latest-reports/:id')
+  @Post('latest-report/:id')
   getPatientLatestReport(@Param('id') id: string) {
-    return this.patientsService.getPatientRecentInfo(id);
+    return this.patientsService.getPatientLatestReport(id);
   }
   @Get('select')
   getAllPatientsFullName() {
