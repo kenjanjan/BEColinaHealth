@@ -429,6 +429,7 @@ export class PatientsService {
     latestVitalSign: any;
     latestLabResult: any;
     latestNotes: any;
+    latestIncidentReport: any;
   }> {
     const patientExists = await this.patientsRepository.findOne({
       where: { uuid: id },
@@ -494,7 +495,7 @@ export class PatientsService {
       .andWhere('lab_results.date <= :dateToday', { dateToday: formattedToday })
       .limit(1);
 
-      const latestNotesQuery = this.patientsRepository
+      const latestNurseNotesQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoinAndSelect('patient.notes', 'notes')
       .select([
@@ -504,15 +505,32 @@ export class PatientsService {
         'notes.createdAt'
       ])
       .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('notes.type = :type', { type: 'nn' })
       .orderBy('notes.createdAt', 'DESC')
       .limit(1);
+
+      const latestIncidentReportQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoinAndSelect('patient.notes', 'notes')
+      .select([
+        'notes.subject',
+        'notes.notes',
+        'notes.type',
+        'notes.createdAt'
+      ])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('notes.type = :type', { type: 'ir' })
+      .orderBy('notes.createdAt', 'DESC')
+      .limit(1);
+
 
     const patientRecentInfoList = await patientSummary.getRawMany();
     const recentASCHMedication = await recentASCHMedicationsQuery.getRawOne();// last medication taken 
     const recentPRNMedication = await recentPRNMedicationsQuery.getRawOne();// prn taken within the day
     const latestLabResult = await latestLabResultQuery.getRawOne();// latestLabResult
     const latestVitalSign = await latestVitalSignQuery.getRawOne();// latest VitalSign
-    const latestNotes = await latestNotesQuery.getRawOne();// latest VitalSign
+    const latestNotes = await latestNurseNotesQuery.getRawOne();// latest VitalSign
+    const latestIncidentReport = await latestIncidentReportQuery.getRawOne();// latest VitalSign
 
     return {
       data: patientRecentInfoList,
@@ -529,6 +547,7 @@ export class PatientsService {
         date: null
       },
       latestNotes: latestNotes || { subject: null, notes: null, type: null,  createdAt: null },
+      latestIncidentReport: latestIncidentReport || { subject: null, notes: null, type: null,  createdAt: null },
 
     };
   }
