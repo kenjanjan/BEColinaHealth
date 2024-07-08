@@ -45,30 +45,30 @@ export class AppointmentsController {
       createAppointmentsInput,
     );
   }
-  @Post('get/all')
-  getAllAppointments(
-    @Body()
-    body: {
-      term: string;
-      page: number;
-      sortBy: string;
-      sortOrder: 'ASC' | 'DESC';
-      startDate: string;
-      endDate: string;
-      perPage: number;
-    },
-  ) {
-    const { term = '', page, sortBy, sortOrder,startDate,endDate, perPage } = body;
-    return this.appointmentService.getAllAppointments(
-      term,
-      page,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      perPage,
-    );
-  }
+    @Post('get/all')
+    getAllAppointments(
+      @Body()
+      body: {
+        term: string;
+        page: number;
+        sortBy: string;
+        sortOrder: 'ASC' | 'DESC';
+        filterStatus: string[];
+        startDate: string;
+        endDate: string;
+      },
+    ) {
+      const { term = '',page, sortBy, sortOrder,filterStatus,startDate,endDate } = body;
+      return this.appointmentService.getAllAppointments(
+        term,
+        page,
+        sortBy,
+        sortOrder,
+        filterStatus,
+        startDate,
+        endDate,
+      );
+    }
   
   @Post('list/:id')
   findAllAppointmentsByPatient(
