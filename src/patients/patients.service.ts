@@ -397,7 +397,7 @@ export class PatientsService {
     const recentMedicationQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.medicationlogs', 'medicationlogs')
-      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate','medicationlogs.medicationType'])
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationType'])
       .where('patient.uuid = :uuid', { uuid: id })
       .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
       .orderBy('medicationlogs.createdAt', 'DESC')
@@ -422,6 +422,152 @@ export class PatientsService {
       totalMedicationDone: totalMedicationDoneCount,
     };
   }
+  async getPatientLatestReport(id: string): Promise<{
+    data: Patients[];
+    recentMedication: any;
+    recentPRN: any;
+    activeMeds: any
+    latestVitalSign: any;
+    latestLabResult: any;
+    latestNotes: any;
+    latestIncidentReport: any;
+  }> {
+    const patientExists = await this.patientsRepository.findOne({
+      where: { uuid: id },
+      select: ['id'],
+    });
+    if (!patientExists) {
+      throw new NotFoundException('Patient not found');
+    }
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0]; // Format date as YYYY-MM-DD
+
+    const patientSummary = this.patientsRepository
+      .createQueryBuilder('patient')
+      .select([
+        'patient.firstName',
+        'patient.lastName',
+        'patient.uuid',
+        'patient.admissionDate'
+      ])
+      .where('patient.uuid = :uuid', { uuid: id });
+
+    const recentASCHMedicationsQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus', 'medicationlogs.notes'])
+      .where('medicationlogs.medicationLogStatus != :stat', { stat: 'pending' })
+      .andWhere('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationType = :medicationLogsType', { medicationLogsType: 'ASCH' })
+      .orderBy('medicationlogs.createdAt', 'DESC')
+      .limit(1)
+
+    const recentPRNMedicationsQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus', 'medicationlogs.notes'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationType = :medicationLogsType', { medicationLogsType: 'PRN' })
+      .orderBy('medicationlogs.createdAt', 'DESC')
+      .limit(1)
+
+    const activeMedicationsQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.prescriptions', 'prescriptions')
+      .select([
+        'prescriptions.name', 
+        'prescriptions.dosage'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('prescriptions.status = :status', { status: 'active' })
+      .limit(6)
+     
+
+
+    const latestVitalSignQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.vitalsign', 'vitalsign')
+      .select(['vitalsign.bloodPressure', 'vitalsign.heartRate', 'vitalsign.respiratoryRate', 'vitalsign.temperature', 'vitalsign.date', 'vitalsign.time'])
+      .andWhere('vitalsign.date <= :dateToday', { dateToday: formattedToday })
+
+      .where('patient.uuid = :uuid', { uuid: id })
+      .limit(1)
+
+    const latestLabResultQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoinAndSelect('patient.lab_results', 'lab_results')
+      .select([
+        'lab_results.hemoglobinA1c',
+        'lab_results.fastingBloodGlucose',
+        'lab_results.totalCholesterol',
+        'lab_results.ldlCholesterol',
+        'lab_results.hdlCholesterol',
+        'lab_results.triglycerides',
+        'lab_results.date',
+        'lab_results.createdAt'
+      ])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('lab_results.date <= :dateToday', { dateToday: formattedToday })
+      .limit(1);
+
+    const latestNurseNotesQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoinAndSelect('patient.notes', 'notes')
+      .select([
+        'notes.subject',
+        'notes.notes',
+        'notes.type',
+        'notes.createdAt'
+      ])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('notes.type = :type', { type: 'nn' })
+      .orderBy('notes.createdAt', 'DESC')
+      .limit(1);
+
+    const latestIncidentReportQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoinAndSelect('patient.notes', 'notes')
+      .select([
+        'notes.subject',
+        'notes.notes',
+        'notes.type',
+        'notes.createdAt'
+      ])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('notes.type = :type', { type: 'ir' })
+      .orderBy('notes.createdAt', 'DESC')
+      .limit(1);
+
+
+    const patientRecentInfoList = await patientSummary.getRawMany();
+    const recentASCHMedication = await recentASCHMedicationsQuery.getRawOne();// last medication taken 
+    const recentPRNMedication = await recentPRNMedicationsQuery.getRawOne();// prn taken within the day
+    const activeMedications = await activeMedicationsQuery.getRawMany();// 
+    const latestLabResult = await latestLabResultQuery.getRawOne();// latestLabResult
+    const latestVitalSign = await latestVitalSignQuery.getRawOne();// latest VitalSign
+    const latestNotes = await latestNurseNotesQuery.getRawOne();// latest VitalSign
+    const latestIncidentReport = await latestIncidentReportQuery.getRawOne();// latest VitalSign
+
+    return {
+      data: patientRecentInfoList,
+      recentMedication: recentASCHMedication || { medicationLogsName: null, medicationLogsTime: null, medicationLogsDate: null },
+      recentPRN: recentPRNMedication ? recentPRNMedication : [{ medicationLogsName: null, medicationLogsTime: null, medicationLogsDate: null }],
+      activeMeds: activeMedications ? activeMedications : [{ uuid: null, name: null, status: null, dosage: null, frequency: null, interval: null }],
+      latestVitalSign: latestVitalSign || { bloodPressure: null, heartRate: null, respiratoryRate: null, temperature: null, date: null },
+      latestLabResult: latestLabResult || {
+        hemoglobinA1c: null,
+        fastingBloodGlucose: null,
+        totalCholesterol: null,
+        ldlCholesterol: null,
+        hdlCholesterol: null,
+        triglycerides: null,
+        date: null
+      },
+      latestNotes: latestNotes || { subject: null, notes: null, type: null, createdAt: null },
+      latestIncidentReport: latestIncidentReport || { subject: null, notes: null, type: null, createdAt: null },
+
+    };
+  }
+
 
   async updatePatients(
     id: string,

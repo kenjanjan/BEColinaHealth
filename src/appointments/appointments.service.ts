@@ -23,7 +23,7 @@ export class AppointmentsService {
     private patientsRepository: Repository<Patients>,
 
     private idService: IdService, // Inject the IdService
-  ) {}
+  ) { }
 
   async createAppointments(
     patientUuid: string,
@@ -211,6 +211,7 @@ export class AppointmentsService {
     page: number = 1,
     sortBy: string = 'appointmentStatus',
     sortOrder: 'ASC' | 'DESC' = 'ASC',
+    filterStatus?: string[] | undefined,
     startDate: string = '2021-01-01',
     endDate: string = '2300-01-01',
     perPage: number = 5,
@@ -220,7 +221,6 @@ export class AppointmentsService {
     currentPage: number;
     totalCount: number;
   }> {
-    const searchTerm = `%${term}%`; // Add wildcards to the search term
     const todayDate = new Date();
     todayDate.setUTCHours(0, 0, 0, 0);
     const skip = (page - 1) * perPage;
@@ -247,6 +247,8 @@ export class AppointmentsService {
         'patient.lastName',
         'patient.middleName',
       ])
+
+      
       .where('appointments.appointmentDate >= :startDate', {
         startDate: startDate,
       })
@@ -256,61 +258,72 @@ export class AppointmentsService {
       .orderBy(validSortBy, sortOrder)
       .offset(skip)
       .limit(perPage);
+    // if (filterStatus) {
+    //   appointmentsQueryBuilder.andWhere('appointments.appointmentStatus = :filterStatus', { filterStatus: filterStatus })
+    // }
+    if (filterStatus && filterStatus.length > 0) {
+      // Use `IN` clause to filter appointments based on multiple statuses
+      appointmentsQueryBuilder.andWhere('appointments.appointmentStatus IN (:...filterStatus)', {
+        filterStatus: filterStatus,
+      });
+    }
 
-      if (term !== '') {
-        console.log('term', term);
-        const searchTerms = term.trim().toLowerCase().split(/\s+/);
-  
-        appointmentsQueryBuilder
-          .where(
-            new Brackets((qb) => {
-              qb.andWhere('appointments.uuid ILIKE :searchTerm', { searchTerm: `%${term}%` })
-                .orWhere('appointments.appointmentStatus ILIKE :searchTerm', { searchTerm: `%${term}%` })
-                .orWhere('appointments.details ILIKE :searchTerm', { searchTerm: `%${term}%` });
-            })
-          )
-          .orWhere(
-            new Brackets((qb) => {
-              if (searchTerms.length > 1) {
-                const firstNameTerm = searchTerms.slice(0, -1).join(' ');
-                const lastNameTerm = searchTerms[searchTerms.length - 1];
-                const fullNameTerm = searchTerms.join(' ');
-                console.log('FIRSTZZ', firstNameTerm);
-                console.log('lastNameTerm', lastNameTerm);
-                console.log('fullNameTerm', fullNameTerm);
+    if (term !== '') {
+      console.log('term', term);
+      const searchTerms = term.trim().toLowerCase().split(/\s+/);
+
+      appointmentsQueryBuilder
+        .where(
+          new Brackets((qb) => {
+            qb.andWhere('appointments.uuid ILIKE :searchTerm', { searchTerm: `%${term}%` })
+              .orWhere('appointments.appointmentStatus ILIKE :searchTerm', { searchTerm: `%${term}%` })
+              .orWhere('appointments.details ILIKE :searchTerm', { searchTerm: `%${term}%` });
+          })
+        )
+        .orWhere(
+          new Brackets((qb) => {
+            if (searchTerms.length > 1) {
+              const firstNameTerm = searchTerms.slice(0, -1).join(' ');
+              const lastNameTerm = searchTerms[searchTerms.length - 1];
+              const fullNameTerm = searchTerms.join(' ');
+              console.log('FIRSTZZ', firstNameTerm);
+              console.log('lastNameTerm', lastNameTerm);
+              console.log('fullNameTerm', fullNameTerm);
+              qb.andWhere(
+                new Brackets((subQb) => {
+                  subQb
+                    .where('LOWER(patient.firstName) LIKE :firstNameTerm', { firstNameTerm: `%${firstNameTerm}%` })
+                    .andWhere('LOWER(patient.lastName) LIKE :lastNameTerm', { lastNameTerm: `%${lastNameTerm}%` });
+                })
+              ).orWhere(
+                new Brackets((subQb) => {
+                  subQb
+                    .where('LOWER(patient.firstName) LIKE :fullNameTerm', { fullNameTerm: `%${fullNameTerm}%` })
+                    .orWhere('LOWER(patient.lastName) LIKE :fullNameTerm', { fullNameTerm: `%${fullNameTerm}%` });
+                })
+              ).orWhere(
+                new Brackets((subQb) => {
+                  subQb
+                    .where('LOWER(CONCAT(patient.firstName, patient.lastName)) = :fullNameTerm', { fullNameTerm: `${fullNameTerm}` })
+                    .orWhere('LOWER(CONCAT(patient.firstName, \' \', patient.lastName)) = :fullNameTerm', { fullNameTerm: `${fullNameTerm}` });
+                })
+              );
+            } else {
+              for (const word of searchTerms) {
                 qb.andWhere(
                   new Brackets((subQb) => {
                     subQb
-                      .where('LOWER(patient.firstName) LIKE :firstNameTerm', { firstNameTerm: `%${firstNameTerm}%` })
-                      .andWhere('LOWER(patient.lastName) LIKE :lastNameTerm', { lastNameTerm: `%${lastNameTerm}%` });
-                  })
-                ).orWhere(
-                  new Brackets((subQb) => {
-                    subQb
-                      .where('LOWER(patient.firstName) LIKE :fullNameTerm', { fullNameTerm: `%${fullNameTerm}%` })
-                      .orWhere('LOWER(patient.lastName) LIKE :fullNameTerm', { fullNameTerm: `%${fullNameTerm}%` });
-                  })
-                ).orWhere(
-                  new Brackets((subQb) => {
-                    subQb
-                      .where('LOWER(CONCAT(patient.firstName, patient.lastName)) = :fullNameTerm', { fullNameTerm: `${fullNameTerm}` })
-                      .orWhere('LOWER(CONCAT(patient.firstName, \' \', patient.lastName)) = :fullNameTerm', { fullNameTerm: `${fullNameTerm}` });
+                      .where('LOWER(patient.firstName) ILIKE :word', { word: `%${word}%` })
+                      .orWhere('LOWER(patient.lastName) ILIKE :word', { word: `%${word}%` });
                   })
                 );
-              } else {
-                for (const word of searchTerms) {
-                  qb.andWhere(
-                    new Brackets((subQb) => {
-                      subQb
-                        .where('LOWER(patient.firstName) ILIKE :word', { word: `%${word}%` })
-                        .orWhere('LOWER(patient.lastName) ILIKE :word', { word: `%${word}%` });
-                    })
-                  );
-                }
               }
-            })
-          );
-      }
+            }
+          })
+        );
+    }
+
+
     const appointmentsList = await appointmentsQueryBuilder.getRawMany();
 
     const totalPatientAppointments = await appointmentsQueryBuilder.getCount();

@@ -53,7 +53,10 @@ export class PatientsController {
   getPatientRecentInfo(@Param('id') id: string) {
     return this.patientsService.getPatientRecentInfo(id);
   }
-
+  @Post('latest-report/:id')
+  getPatientLatestReport(@Param('id') id: string) {
+    return this.patientsService.getPatientLatestReport(id);
+  }
   @Get('select')
   getAllPatientsFullName() {
     return this.patientsService.getAllPatientsFullName();
