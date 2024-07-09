@@ -14,7 +14,7 @@ import {
   Index,
   OneToMany,
 } from 'typeorm';
-@Entity()
+@Entity('prescriptions')
 @ObjectType()
 export class Prescriptions {
   @PrimaryGeneratedColumn()
