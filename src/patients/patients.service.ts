@@ -454,7 +454,7 @@ export class PatientsService {
     const recentASCHMedicationsQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.medicationlogs', 'medicationlogs')
-      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus'])
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus','medicationlogs.notes'])
       .where('medicationlogs.medicationLogStatus != :stat', { stat: 'pending' })
       .andWhere('patient.uuid = :uuid', { uuid: id })
       .andWhere('medicationlogs.medicationType = :medicationLogsType', { medicationLogsType: 'ASCH' })
@@ -464,17 +464,16 @@ export class PatientsService {
     const recentPRNMedicationsQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.medicationlogs', 'medicationlogs')
-      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus'])
-      .where('medicationlogs.medicationLogStatus != :medicationLogStatus', { medicationLogStatus: 'pending' })
-      .andWhere('patient.uuid = :uuid', { uuid: id })
-      .andWhere('medicationlogs.medicationType = :medicationLogStatus', { medicationLogStatus: 'PRN' })
+      .select(['medicationlogs.medicationLogsName', 'medicationlogs.medicationLogsTime', 'medicationlogs.medicationLogsDate', 'medicationlogs.medicationLogStatus', 'medicationlogs.notes'])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationType = :medicationLogsType', { medicationLogsType: 'PRN' })
       .orderBy('medicationlogs.createdAt', 'DESC')
       .limit(1)
 
     const latestVitalSignQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .innerJoin('patient.vitalsign', 'vitalsign')
-      .select(['vitalsign.bloodPressure', 'vitalsign.heartRate', 'vitalsign.respiratoryRate', 'vitalsign.temperature', 'vitalsign.date'])
+      .select(['vitalsign.bloodPressure', 'vitalsign.heartRate', 'vitalsign.respiratoryRate', 'vitalsign.temperature', 'vitalsign.date','vitalsign.time'])
       .andWhere('vitalsign.date <= :dateToday', { dateToday: formattedToday })
 
       .where('patient.uuid = :uuid', { uuid: id })
@@ -490,7 +489,8 @@ export class PatientsService {
         'lab_results.ldlCholesterol',
         'lab_results.hdlCholesterol',
         'lab_results.triglycerides',
-        'lab_results.date'
+        'lab_results.date',
+        'lab_results.createdAt'
       ])
       .where('patient.uuid = :uuid', { uuid: id })
       .andWhere('lab_results.date <= :dateToday', { dateToday: formattedToday })
