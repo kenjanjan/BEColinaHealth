@@ -475,13 +475,11 @@ export class PatientsService {
       .createQueryBuilder('patient')
       .innerJoin('patient.prescriptions', 'prescriptions')
       .select([
-        'prescriptions.uuid', 
         'prescriptions.name', 
-        'prescriptions.frequency',
-         'prescriptions.dosage',
-          'prescriptions.interval', 'prescriptions.status'])
+        'prescriptions.dosage'])
       .where('patient.uuid = :uuid', { uuid: id })
       .andWhere('prescriptions.status = :status', { status: 'active' })
+      .limit(6)
      
 
 
