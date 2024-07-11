@@ -25,12 +25,13 @@ jobs:
         run: |
           npm install
           npm run build --if-present
+          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: node-app
           path: release.zip
@@ -46,7 +47,7 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: node-app
 
@@ -54,15 +55,15 @@ jobs:
         run: unzip release.zip
       
       - name: Login to Azure
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4E49AAE909F1450AB38044EFF931BCF8 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_538B93C4F93145C8ACD66F25C284572D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F16FC0290CE24E5C945E0D64FEAA75F8 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1CEBDCABDA9A4D9CACE969DCB139042F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_53B4CB55F1A24B4C97DF263E82948FF0 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_50B841AE976749E38886931BAC7996B2 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'kjcolinabackend'
           slot-name: 'Production'
