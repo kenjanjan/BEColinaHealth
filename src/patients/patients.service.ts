@@ -317,6 +317,7 @@ export class PatientsService {
   async getPatientRecentInfo(id: string): Promise<{
     data: Patients[];
     recentMedication: any[];
+    recentPRN: any[];
     totalMedicationDue: number;
     totalMedicationDone: number;
     patientAllergies: any;
@@ -430,6 +431,9 @@ export class PatientsService {
       .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', {
         medicationLogStatus: 'pending',
       })
+      .andWhere('medicationlogs.medicationType = :medicationType', {
+        medicationType: 'ASCH',
+      })
       .orderBy('medicationlogs.medicationLogsDate', 'DESC')
       .addOrderBy('medicationlogs.medicationLogsTime', 'DESC')
       .limit(1);
@@ -454,12 +458,9 @@ export class PatientsService {
           'medicationlogs.medicationType',
         ])
         .where('patient.uuid = :uuid', { uuid: id })
-        .andWhere(
-          'medicationlogs.medicationLogStatus != :stat',
-          {
-            stat: 'pending',
-          },
-        )
+        .andWhere('medicationlogs.medicationLogStatus != :stat', {
+          stat: 'pending',
+        })
         .andWhere('medicationlogs.medicationLogsDate = :medicationLogsDate', {
           medicationLogsDate,
         })
@@ -469,26 +470,94 @@ export class PatientsService {
         .orderBy('medicationlogs.createdAt', 'DESC');
 
       allRecentLogs = await allRecentLogsQuery.getRawMany();
-      console.log(await allRecentLogsQuery.getRawMany(), "allRecentLogs")
+      console.log(await allRecentLogsQuery.getRawMany(), 'allRecentLogs');
+    }
 
+    // Get the most recent medication log
+    const recentMedicationPrnQuery = this.patientsRepository
+      .createQueryBuilder('patient')
+      .innerJoin('patient.medicationlogs', 'medicationlogs')
+      .select([
+        'medicationlogs.medicationLogsName',
+        'medicationlogs.medicationLogsTime',
+        'medicationlogs.medicationLogsDate',
+        'medicationlogs.medicationType',
+      ])
+      .where('patient.uuid = :uuid', { uuid: id })
+      .andWhere('medicationlogs.medicationLogStatus != :medicationLogStatus', {
+        medicationLogStatus: 'pending',
+      })
+      .andWhere('medicationlogs.medicationType = :medicationType', {
+        medicationType: 'PRN',
+      })
+      .orderBy('medicationlogs.medicationLogsDate', 'DESC')
+      .addOrderBy('medicationlogs.medicationLogsTime', 'DESC')
+      .limit(1);
+
+    const mostRecentPrnLog = await recentMedicationPrnQuery.getRawOne();
+    console.log(mostRecentPrnLog, 'most recent');
+    let allRecentPrnLogs: any[] = [];
+    if (mostRecentPrnLog) {
+      const medicationLogsDate =
+        mostRecentPrnLog.medicationlogs_medicationLogsDate;
+      const medicationLogsTime =
+        mostRecentPrnLog.medicationlogs_medicationLogsTime;
+      console.log(medicationLogsDate, 'medicationDate');
+
+      // Get all logs that have the same most recent date and time
+      const allRecentPrnLogsQuery = this.patientsRepository
+        .createQueryBuilder('patient')
+        .innerJoin('patient.medicationlogs', 'medicationlogs')
+        .select([
+          'medicationlogs.medicationLogsName',
+          'medicationlogs.medicationLogsTime',
+          'medicationlogs.medicationLogsDate',
+          'medicationlogs.medicationType',
+        ])
+        .where('patient.uuid = :uuid', { uuid: id })
+        .andWhere('medicationlogs.medicationLogStatus != :stat', {
+          stat: 'pending',
+        })
+        .andWhere('medicationlogs.medicationLogsDate = :medicationLogsDate', {
+          medicationLogsDate,
+        })
+        .andWhere('medicationlogs.medicationLogsTime = :medicationLogsTime', {
+          medicationLogsTime,
+        })
+        .orderBy('medicationlogs.createdAt', 'DESC');
+
+      allRecentPrnLogs = await allRecentPrnLogsQuery.getRawMany();
+      console.log(await allRecentPrnLogsQuery.getRawMany(), 'allRecentPrnLogs');
     }
 
     const allergensQuery = this.patientsRepository
       .createQueryBuilder('patient')
       .leftJoin('patient.allergies', 'allergies')
       .select("STRING_AGG(allergies.allergen, ', ')", 'allergens')
-      .where('patient.uuid = :uuid', { uuid: id });
+      .addSelect('allergies.severity')
+      .where('patient.uuid = :uuid', { uuid: id })
+      .groupBy('allergies.severity');
 
     const patientRecentInfoList = await patientRecentInfo.getRawMany();
     const patientAllergies = await allergensQuery.getRawMany();
     const totalMedicationCount = await medicationCountSubQuery.getRawOne();
     const totalMedicationDoneCount = await medicationDoneCount.getRawOne();
-
+console.log(totalMedicationCount.medicationCount, 'totalMedicationCount');
     return {
       data: patientRecentInfoList,
       recentMedication:
         allRecentLogs.length > 0
           ? allRecentLogs
+          : [
+              {
+                medicationLogsName: null,
+                medicationLogsTime: null,
+                medicationLogsDate: null,
+              },
+            ],
+      recentPRN:
+        allRecentPrnLogs.length > 0
+          ? allRecentPrnLogs
           : [
               {
                 medicationLogsName: null,
@@ -571,12 +640,13 @@ export class PatientsService {
       .createQueryBuilder('patient')
       .innerJoin('patient.prescriptions', 'prescriptions')
       .select([
-        'prescriptions.uuid', 
-        'prescriptions.name', 
+        'prescriptions.uuid',
+        'prescriptions.name',
         'prescriptions.frequency',
         'prescriptions.dosage',
         'prescriptions.interval',
-        'prescriptions.status'])
+        'prescriptions.status',
+      ])
       .where('patient.uuid = :uuid', { uuid: id })
       .andWhere('prescriptions.status = :status', { status: 'active' })
       .limit(6);
