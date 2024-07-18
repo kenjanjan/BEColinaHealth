@@ -15,10 +15,10 @@ export class VitalSignsController {
     @Post('list/:id')
     findAllPatientVitalSigns(
         @Param('id') patientId: string,
-        @Body() body: { term: string, page: number, sortBy: string, sortOrder: 'ASC' | 'DESC' }
+        @Body() body: { term: string, page: number, sortBy: string, sortOrder: 'ASC' | 'DESC' , perPage: number}
     ) {
-        const { term = "", page, sortBy, sortOrder } = body;
-        return this.vitalSignService.getAllVitalSignsByPatient(patientId, term, page, sortBy, sortOrder);
+        const { term = "", page, sortBy, sortOrder, perPage } = body;
+        return this.vitalSignService.getAllVitalSignsByPatient(patientId, term, page, sortBy, sortOrder, perPage);
     }
     //onClick from prescriptions- get prescriptionsId for patch
     @Patch('update/:id')

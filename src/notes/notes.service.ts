@@ -47,7 +47,6 @@ export class NotesService {
     patientUuid: string,
     term: string,
     type: string,
-
     page: number = 1,
     sortBy: string = 'subject',
     sortOrder: 'ASC' | 'DESC' = 'ASC',

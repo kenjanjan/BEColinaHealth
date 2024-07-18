@@ -44,8 +44,8 @@ export class VitalSignsService {
     patientUuid: string,
     term: string,
     page: number = 1,
-    sortBy: string = 'lastName',
-    sortOrder: 'ASC' | 'DESC' = 'ASC',
+    sortBy: string = 'date',
+    sortOrder: 'ASC' | 'DESC' = 'DESC',
     perPage: number = 5,
   ): Promise<{
     data: VitalSigns[];

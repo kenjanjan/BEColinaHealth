@@ -57,15 +57,17 @@ export class MedicationLogsController {
       page: number;
       sortBy: string;
       sortOrder: 'ASC' | 'DESC';
+      perPage: number;
     },
   ) {
-    const { term = '', page, sortBy, sortOrder } = body;
+    const { term = '', page, sortBy, sortOrder, perPage } = body;
     return this.medicationLogsService.getAllASCHMedicationLogsByPatient(
       patientId,
       term,
       page,
       sortBy,
       sortOrder,
+      perPage,
     );
   }
 
@@ -78,15 +80,17 @@ export class MedicationLogsController {
       page: number;
       sortBy: string;
       sortOrder: 'ASC' | 'DESC';
+      perPage: number;
     },
   ) {
-    const { term = '', page, sortBy, sortOrder } = body;
+    const { term = '', page, sortBy, sortOrder, perPage } = body;
     return this.medicationLogsService.getAllPRNMedicationLogsByPatient(
       patientId,
       term,
       page,
       sortBy,
       sortOrder,
+      perPage
     );
   }
 
